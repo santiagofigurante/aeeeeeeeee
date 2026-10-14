@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Senha Moderno</title>
+    <!-- Importação de fonte moderna e ícones -->
+    <link href="https://googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="https://cloudflare.com">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Cores dos estados */
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 48px 16px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--text-main);
+        }
+
+        /* Barra de Força */
+        .strength-meter {
+            height: 6px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 3px;
+        }
+
+        .strength-text {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+        }
+
+        /* Requisitos */
+        .requirements-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .requirement {
+            font-size: 14px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .requirement i {
+            font-size: 12px;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Classes de validação dinâmicas */
+        .requirement.valid {
+            color: var(--text-main);
+        }
+        .requirement.valid i {
+            color: var(--success);
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Crie sua senha</h2>
+        <p class="subtitle">Insira uma senha forte para proteger sua conta.</p>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Digite sua senha..." autocomplete="off">
+            <i class="fa-regular fa-eye toggle-password" id="togglePassword"></i>
+        </div>
+
+        <div class="strength-meter">
+            <div class="strength-bar" id="strengthBar"></div>
+        </div>
+        
+        <div class="strength-text" id="strengthText">
+            Força da senha: Digite algo...
+        </div>
+
+        <ul class="requirements-list">
+            <li class="requirement" data-rule="length">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Pelo menos 8 caracteres
+            </li>
+            <li class="requirement" data-rule="uppercase">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Uma letra maiúscula
+            </li>
+            <li class="requirement" data-rule="number">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Um número
+            </li>
+            <li class="requirement" data-rule="special">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Um caractere especial (!@#\$%)
+            </li>
+        </ul>
+    </div>
+
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        
+        const requirements = {
+            length: { regex: /.{8,}/, element: document.querySelector('[data-rule="length"]') },
+            uppercase: { regex: /[A-Z]/, element: document.querySelector('[data-rule="uppercase"]') },
+            number: { regex: /[0-9]/, element: document.querySelector('[data-rule="number"]') },
+            special: { regex: /[^A-Za-z0-9]/, element: document.querySelector('[data-rule="special"]') }
+        };
+
+        // Mostrar / Ocultar Senha
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.classList.toggle('fa-eye');
+            togglePassword.classList.toggle('fa-eye-slash');
+        });
+
+        // Validação em Tempo Real
+        passwordInput.addEventListener('input', () => {
+            const value = passwordInput.value;
+            let score = 0;
+
+            // Verifica cada regra
+            Object.keys(requirements).forEach(key => {
+                const rule = requirements[key];
+                const isValid = rule.regex.test(value);
+                const icon = rule.element.querySelector('i');
+
+                if (isValid) {
+                    score++;
+                    rule.element.classList.add('valid');
+                    icon.className = 'fa-solid fa-circle-check'; // Ícone de sucesso
+                } else {
+                    rule.element.classList.remove('valid');
+                    icon.className = value.length > 0 
+                        ? 'fa-solid fa-circle-xmark' // Ícone de erro se já começou a digitar
+                        : 'fa-solid fa-circle-notch fa-spin'; // Ícone neutro de espera
+                    
+                    if (value.length > 0) {
+                        icon.style.color = 'var(--danger)';
+                    } else {
+                        icon.style.color = '';
+                    }
+                }
+            });
+
+            // Atualiza o medidor de força baseado no score
+            updateStrengthMeter(score, value.length);
+        });
+
+        function updateStrengthMeter(score, length) {
+            if (length === 0) {
+                strengthBar.style.width = '0%';
+                strengthText.innerHTML = 'Força da senha: Digite algo...';
+                strengthText.style.color = 'var(--text-muted)';
+                return;
+            }
+
+            let width = '0%';
+            let color = '';
+            let label = '';
+
+            switch (score) {
+                case 1:
+                    width = '25%';
+                    color = 'var(--danger)';
+                    label = 'Fraca ❌';
+                    break;
+                case 2:
+                    width = '50%';
+                    color = 'var(--warning)';
+                    label = 'Razoável ⚠️';
+                    break;
+                case 3:
+                    width = '75%';
+                    color = 'var(--info)';
+                    label = 'Boa 👀';
+                    break;
+                case 4:
+                    width = '100%';
+                    color = 'var(--success)';
+                    label = 'Muito Forte! 🔥';
+                    break;
+                default:
+                    width = '10%';
+                    color = 'var(--danger)';
+                    label = 'Muito Fraca ❌';
+            }
+
+            strengthBar.style.width = width;
+            strengthBar.style.background = color;
+            strengthText.innerHTML = `Força da senha: <span style="color: ${color}">${label}</span>`;
+        }
+    </script>
+</body>
+</html>
